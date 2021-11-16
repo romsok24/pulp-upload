@@ -146,8 +146,6 @@ pulp file distribution create --name $(date +"%D") --base-path ros09 --publicati
 ```
 ...or using a bulp upload [tool](bin/pulp_file_packages_processing.sh):
 
-![bulp upload](img/bulp_upload.jpg)
-
 
 
 # Securing the docker repo with self signed SSL cert
