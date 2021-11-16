@@ -74,13 +74,13 @@ REPO_HREF=$(curl -o - -w "%{http_code}"  --netrc-file apic_romanazure.netrc -X P
 echo "Write down the repo HREF: "
 
 #Create a remote for repo to sync with
-epi_dev_container=$(curl -k -X GET http://customreg.epi.local:5000/v2/_catalog | jq '.repositories[]')
+ros_dev_container=$(curl -k -X GET http://customreg.ros.local:5000/v2/_catalog | jq '.repositories[]')
 echo "Creating a remote that points to an external source of container images."
-#for name in $epi_dev_container; do echo $name ; done;
-for name in $epi_dev_container;
+#for name in $ros_dev_container; do echo $name ; done;
+for name in $ros_dev_container;
 do
   echo "Creating remote for: $name "
-  http POST $BASE_ADDR/pulp/api/v3/remotes/container/container/ name=$name url='http://customreg.epi.local:5000/v2/_catalog' upstream_name=$name --verify false
+  http POST $BASE_ADDR/pulp/api/v3/remotes/container/container/ name=$name url='http://customreg.ros.local:5000/v2/_catalog' upstream_name=$name --verify false
 done
 
 # Sync the pulp registry with the remote
@@ -135,14 +135,14 @@ pulp file content show --href /pulp/api/v3/content/file/files/f648c460-da36-4f5c
 pulp file content create --relative-path files/apic_add2repo.yaml --sha256 80de3076c0870334ca25edddb31001a44862dcf3939dd6f6de8350ad3b065a09
 pulp file content create --relative-path images/vault-k8s-0.10.0.tar --sha256 8b6e25815f0916c4953b03d528f982e73a6bbde2f8f6567137bd9208ef336d51
 pulp file content create --relative-path images_centos74/vault-k8s-0.10.0.tar --sha256 8b6e25815f0916c4953b03d528f982e73a6bbde2f8f6567137bd9208ef336d51
-pulp file repository create --name epi_repo_09
-pulp file repository add --name epi_repo_09 --relative-path files/apic_add2repo.yaml --sha256 80de3076c0870334ca25edddb31001a44862dcf3939dd6f6de8350ad3b065a09
-pulp file repository add --name epi_repo_09 --relative-path images/vault-k8s-0.10.0.tar --sha256 8b6e25815f0916c4953b03d528f982e73a6bbde2f8f6567137bd9208ef336d51
-pulp file repository add --name epi_repo_09 --relative-path images_centos74/vault-k8s-0.10.0.tar --sha256 8b6e25815f0916c4953b03d528f982e73a6bbde2f8f6567137bd9208ef336d51
+pulp file repository create --name ros_repo_09
+pulp file repository add --name ros_repo_09 --relative-path files/apic_add2repo.yaml --sha256 80de3076c0870334ca25edddb31001a44862dcf3939dd6f6de8350ad3b065a09
+pulp file repository add --name ros_repo_09 --relative-path images/vault-k8s-0.10.0.tar --sha256 8b6e25815f0916c4953b03d528f982e73a6bbde2f8f6567137bd9208ef336d51
+pulp file repository add --name ros_repo_09 --relative-path images_centos74/vault-k8s-0.10.0.tar --sha256 8b6e25815f0916c4953b03d528f982e73a6bbde2f8f6567137bd9208ef336d51
 
 http --session roman GET http://127.0.0.1:8080/pulp/api/v3/content/file/files/?repository_version=/pulp/api/v3/repositories/file/file/f1d8df94-5ee3-4556-8b70-c4679369cd2c/versions/1/
-pulp file publication create --repository epi_repo_09
-pulp file distribution create --name $(date +"%D") --base-path epi09 --publication /pulp/api/v3/publications/file/file/95bf0636-704b-4fc4-a8bf-2adf80323cce/
+pulp file publication create --repository ros_repo_09
+pulp file distribution create --name $(date +"%D") --base-path ros09 --publication /pulp/api/v3/publications/file/file/95bf0636-704b-4fc4-a8bf-2adf80323cce/
 ```
 ...or using a bulp upload [tool](bin/pulp_file_packages_processing.sh):
 
@@ -154,8 +154,8 @@ pulp file distribution create --name $(date +"%D") --base-path epi09 --publicati
 ```
 #Run as root both pn reg machine and on client:
 openssl req  -newkey rsa:4096 -nodes -sha256 -keyout ca.key -x509 -days 365 -out ca.crt # file extensions are important!
-mkdir -p /etc/docker/certs.d/customreg.epi.local:5000
-mv ca* /etc/docker/certs.d/customreg.epi.local:5000/
+mkdir -p /etc/docker/certs.d/customreg.ros.local:5000
+mv ca* /etc/docker/certs.d/customreg.ros.local:5000/
 
 ```
 
@@ -217,7 +217,7 @@ http --session=roman PUT "$BASE_ADDR"/pulp/api/v3/remotes/rpm/rpm/68c82777-3385-
 ```
 cd /path/to/Dockerfile/
 docker build -t pulp_cli . 
-docker run -dt --rm --name p_cli -v /home/ros/dane/epi_customrepo/:/custom-repo/ pulp_cli # add --add-host=localhost:host-gateway  if you;re running pulp on your local machine
+docker run -dt --rm --name p_cli -v /home/ros/dane/ros_customrepo/:/custom-repo/ pulp_cli # add --add-host=localhost:host-gateway  if you;re running pulp on your local machine
 docker exec -it p_cli /bin/bash
 echo "xx.yy.zz.ww      yourpulp.instance.local" >> /etc/hosts  # run it inside the container
 ```
@@ -225,9 +225,9 @@ echo "xx.yy.zz.ww      yourpulp.instance.local" >> /etc/hosts  # run it inside t
 ## Custom repo general example ( using docker/registry )
 
  ```
-curl -k -X GET https://customreg.epi.local:5010/v2/_catalog
+curl -k -X GET https://customreg.ros.local:5010/v2/_catalog
 curl -u user:pass http://pulp-vm3.cbs.hasops.com/v2/vault/tags/list
 
-sudo docker pull customreg.epi.local:5010/istio/proxyv2 http://localhost:8080/pulp/api/v3/repositories/deb/apt
+sudo docker pull customreg.ros.local:5010/istio/proxyv2 http://localhost:8080/pulp/api/v3/repositories/deb/apt
 ```
 
